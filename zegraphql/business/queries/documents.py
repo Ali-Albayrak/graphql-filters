@@ -24,7 +24,7 @@ class DocumentQuery:
             raise HTTPException(500, f"failed to fetch document with id <{id}>")
 
     @strawberry.field(extensions=[PermissionExtension(permissions=[Protect(DocumentsAccess.list_roles())])])
-    async def list_documents(self, info: strawberry.Info[GraphQLContext]) -> list[DocumentType]:
+    async def list_documents(self, info: strawberry.Info[GraphQLContext], q:QuerySchema) -> ReadDocuments:
         db = info.context.db
         try:
             obj = DocumentModel.objects(db)
