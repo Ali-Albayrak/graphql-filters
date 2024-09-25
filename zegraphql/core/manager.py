@@ -16,6 +16,7 @@ class QueryBuilderSchema(BaseModel):
     filters_list: Optional[List[Any]] = Field(default=[], description="List of filters as BinaryExpression objects")
     filters_dict: Optional[dict] = Field(default={}, description="pair of field name and its value")
     sort: Optional[Any] = Field(default=None, description="Sorting expression as UnaryExpression object")
+    # join: Optional[Any] = Field(default=None, description="Join expression as UnaryExpression object")
 
 
 T = TypeVar("T", bound=SQLBaseModel)
@@ -59,6 +60,13 @@ class Manager(Generic[T]):
         if kwargs.get("sort"):
             self._query.sort = self._build_sort(kwargs.get("sort"))
 
+    def _build_join(self, field_path: list[str], model: T, index: int) -> None:
+        """
+        Build a join expression for the query based on the field path.
+        """
+        self._query.join = model
+        log.debug(f"Join Update: Joining model <{model.__name__}> with field path <{field_path[:index+1]}>")
+
     def _build_filter_list(self, filters: list[FieldFilter] = None) -> list[BinaryExpression]:
         filter_conditions = []
         log.debug("---- Building filter list ----")
@@ -76,6 +84,7 @@ class Manager(Generic[T]):
                         # Get the relationship
                         current_model = getattr(current_model, field).property.mapper.class_
                         log.debug(f"Current filtering model updated: {current_model}")
+                        # self._build_join(field_path, current_model, i)
 
             if hasattr(current_model, field_path[-1]):
                 column_attr = getattr(current_model, field_path[-1])
@@ -106,7 +115,12 @@ class Manager(Generic[T]):
             if operator.ilike is not None:
                 filter_conditions.append(column_attr.ilike(f"%{operator.ilike}%"))
             if operator.in_ is not None:
-                filter_conditions.append(column_attr.in_(operator.in_))
+                # log.debug(f"{column_attr.type.python_type=}")
+                # log.debug(f"{datetime.date()}")
+                in_value = [self.Model.str_to_column_type(field_path[-1], x) for x in operator.in_]
+                # in_value = [column_attr.type.python_type(x) for x in operator.in_]
+                log.debug(f"in_value: {in_value}")
+                filter_conditions.append(column_attr.in_(in_value))
             if operator.nin is not None:
                 filter_conditions.append(column_attr.not_in(operator.nin))
             if operator.is_null == True:
@@ -143,6 +157,8 @@ class Manager(Generic[T]):
         """
         statement = select(self.Model)
         
+        # if self._query.join:
+        #     statement = statement.options(joinedload('*'))
         if self._query.filters_list:
             statement = statement.filter(*self._query.filters_list)
         if self._query.filters_dict:
