@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from business.types import DocumentType, CreateDocumentInput, UpdateDocumentInput
 from business.db_models.documents_model import DocumentModel, DocumentsAccess
+from core.filter_type import FieldFilter, QueryOperator
 from core.constants import AppConstants as AC
 from core.depends import GraphQLContext
 from core.auth import Protect
@@ -130,7 +131,7 @@ class DocumentMutation:
         db = info.context.db
         try:
             obj = DocumentModel.objects(db)
-            old_data = await obj.get_multiple(document_ids)
+            old_data = await obj.all(filters=[FieldFilter(field_path="id", operator=QueryOperator(in_=document_ids))])
             if not old_data:
                 raise HTTPException(404, f"<{document_ids}> records not found in documents")
             kwargs = {

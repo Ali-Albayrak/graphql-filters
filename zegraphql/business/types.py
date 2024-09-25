@@ -57,6 +57,12 @@ class DocumentType(BaseType):
     original_pdf: strawberry.ID
     status: Optional[DocumentStatusEnum] = None
 
+@strawberry.type
+class ReadDocuments(BaseType):
+    documents: List[DocumentType]
+    page_size: Optional[int] = None
+    next_page: Optional[int] = None
+
 @strawberry.input
 class CreateDocumentInput(BaseType):
     id: Optional[strawberry.ID] = None

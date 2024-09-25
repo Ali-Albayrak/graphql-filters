@@ -10,9 +10,10 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+import strawberry
 from strawberry.fastapi import GraphQLRouter
 from strawberry.extensions import QueryDepthLimiter
-import strawberry
+from strawberry.schema.config import StrawberryConfig
 
 from business.queries import Query
 from business.mutations import Mutation
@@ -22,7 +23,7 @@ from core.custom_exceptions import TriggerException
 
 app = FastAPI(title='karari')
 
-schema = strawberry.Schema(Query, Mutation, extensions=[
+schema = strawberry.Schema(Query, Mutation, config=StrawberryConfig(auto_camel_case=False), extensions=[
         QueryDepthLimiter(max_depth=3),
     ])
 

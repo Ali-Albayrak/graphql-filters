@@ -1,6 +1,8 @@
+import json
 import uuid
+# from typing import 
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -24,6 +26,28 @@ class BaseModel(Base):
 
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    
+    @classmethod
+    def str_to_column_type(cls, column_name: str, value: str):
+
+        sql_type_to_python_type = {
+            str: str,
+            int: int,
+            float: float,
+            bool: bool,
+            datetime: lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f'),
+            date: lambda x: datetime.strptime(x, '%Y-%m-%d').date(),
+            UUID: UUID,
+            bytes: lambda x: bytes(x, encoding='utf-8'),
+            list: lambda x: x.split(','),
+            dict: lambda x: json.loads(x),
+        }
+
+        column = cls.__table__.columns.get(column_name)
+        if column is None:
+            return value
+        return sql_type_to_python_type.get(column.type.python_type, str)(value)
+
 
 
 class TenantModel(Base):
